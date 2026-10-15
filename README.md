@@ -26,15 +26,15 @@ It needs Python 3.11 or newer and has no dependencies (standard library only).
 
 ```
 usage: ignorewhy explain [--root DIR] [--exclude FILE] PATH...
-       ignorewhy filter [--root DIR] [--exclude FILE] [FILE]
+       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [FILE]
        ignorewhy lint FILE...
 ```
 
 - `explain` prints one line per PATH and names the rule that decides it.
-- `filter` reads one path per line from FILE (or from standard input without FILE or with `-`) and prints the paths that are not ignored.
+- `filter` reads one path per line from FILE (or from standard input without FILE or with `-`) and prints the paths that are not ignored; with `--ignored` it prints the paths that are ignored instead.
 - `lint` reads each FILE as one ignore file and reports rules that cannot work.
 
-Options of `explain` and `filter`: `--root DIR` is the directory that holds the root `.gitignore` (default `.`); `--exclude FILE` is an extra ignore file with the weakest rules. Write them as `--opt VALUE` or `--opt=VALUE`; the last one wins. `lint` takes no options. Paths are never looked up on disk: a trailing `/` marks a directory.
+Options of `explain` and `filter`: `--root DIR` is the directory that holds the root `.gitignore` (default `.`); `--exclude FILE` is an extra ignore file with the weakest rules. Write them as `--opt VALUE` or `--opt=VALUE`; the last one wins. `lint` takes no options. Paths are never looked up on disk: a trailing `/` marks a directory. `--ignored` is an option of `filter` only and takes no value.
 
 Example: in a folder `ex` with the root `.gitignore` (lines `build/`, `*.log`, `!keep.log`, `/dist`) and `docs/.gitignore` (lines `*.tmp`, `!/notes.tmp`), this command run in `ex`
 
@@ -55,6 +55,8 @@ docs/x.tmp: ignored (docs/.gitignore:1: *.tmp)
 docs/notes.tmp: not ignored (docs/.gitignore:2: !/notes.tmp)
 README.md: not ignored
 ```
+
+Example: in the same folder `ex`, `ignorewhy filter --ignored` with the standard input lines `src/main.py`, `build/x.o`, `.cache/`, `logs/a.log` and `src/` prints the two ignored lines `build/x.o` and `logs/a.log`, in input order; without `--ignored` it prints the other three.
 
 Example: the file `ignore.txt` has the lines `/a/`, `!/a/b/keep.txt`, `a**b`, `./foo`, `foo[`, `bar\` (one trailing backslash), `/a/` and `# done`. The command `ignorewhy lint ignore.txt` prints
 

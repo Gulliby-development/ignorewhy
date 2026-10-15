@@ -2,7 +2,7 @@
 
 USAGE = (
     "usage: ignorewhy explain [--root DIR] [--exclude FILE] PATH...",
-    "       ignorewhy filter [--root DIR] [--exclude FILE] [FILE]",
+    "       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [FILE]",
     "       ignorewhy lint FILE...",
 )
 
