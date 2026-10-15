@@ -17,13 +17,16 @@ OPTIONS = ("--root", "--exclude")
 
 def _read_arguments(command, rest):
     """Return (options, positional) reading left to right; the first problem ends it."""
-    options = {"--root": ".", "--exclude": None}
+    options = {"--root": ".", "--exclude": None, "--ignored": False}
     positional = []
     allowed = () if command == "lint" else OPTIONS
     index = 0
     while index < len(rest):
         arg = rest[index]
         index += 1
+        if command == "filter" and arg == "--ignored":
+            options["--ignored"] = True
+            continue
         if arg in allowed:
             if index >= len(rest):
                 raise UsageError(f"{arg} needs a value")
@@ -60,7 +63,7 @@ def _explain(source, paths):
     return lines, 0 if any_ignored else 1
 
 
-def _filter(source, stdin, file_arg):
+def _filter(source, stdin, file_arg, ignored):
     if file_arg is None or file_arg == "-":
         text = decode(stdin(), "<stdin>")
     else:
@@ -68,7 +71,7 @@ def _filter(source, stdin, file_arg):
     entries = [(line, normalize(line)) for line in _split_lines(text)]
     lines = []
     for line, (parts, is_dir) in entries:
-        if not decide(source.layers_for(parts), parts, is_dir).ignored:
+        if decide(source.layers_for(parts), parts, is_dir).ignored == ignored:
             lines.append(line)
     return lines, 0
 
@@ -112,7 +115,7 @@ def _execute(args, stdin):
     source = LayerSource(Path(root), layer)
     if command == "explain":
         return _explain(source, positional)
-    return _filter(source, stdin, positional[0] if positional else None)
+    return _filter(source, stdin, positional[0] if positional else None, options["--ignored"])
 
 
 def run(args, stdin, out, err):

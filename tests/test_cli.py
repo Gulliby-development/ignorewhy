@@ -13,7 +13,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 USAGE_LINES = (
     "usage: ignorewhy explain [--root DIR] [--exclude FILE] PATH...",
-    "       ignorewhy filter [--root DIR] [--exclude FILE] [FILE]",
+    "       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [FILE]",
     "       ignorewhy lint FILE...",
 )
 
@@ -457,3 +457,71 @@ def test_license_text():
     text = read_text("LICENSE")
     assert text.startswith("MIT License")
     assert "Copyright (c) 2026 Gulliby-development" in text
+
+
+# --- filtering ignored paths ------------------------------------------------------------------
+
+
+def test_filter_ignored_worked_example(ex, tmp_path):
+    paths = tmp_path / "paths.txt"
+    paths.write_bytes(b"a.log\nsrc/app.py\nbuild/\nkeep.log\n\nREADME.md\n")
+
+    code, out, err = invoke(["filter", "--root", str(ex), str(paths)])
+    assert (code, out, err) == (0, lines_of("src/app.py", "keep.log", "README.md"), [])
+
+    code, out, err = invoke(["filter", "--root", str(ex), "--ignored", str(paths)])
+    assert (code, out, err) == (0, lines_of("a.log", "build/"), [])
+
+
+@pytest.mark.parametrize("flag_first", [True, False])
+def test_filter_ignored_flag_before_and_after_positional(ex, flag_first):
+    args = ["filter", "--root", str(ex)]
+    args.extend(["--ignored", "-"] if flag_first else ["-", "--ignored"])
+    code, out, err = invoke(args, STDIN_PATHS)
+    assert (code, out, err) == (0, "build/x.o\nlogs/a.log\n", [])
+
+
+def test_filter_ignored_repeated_with_dash_preserves_spelling(ex):
+    stdin = b"./build\\x.o\nlogs/a.log\n"
+    code, out, err = invoke(
+        ["filter", "--root", str(ex), "--ignored", "-", "--ignored"],
+        stdin,
+    )
+    assert (code, out, err) == (0, "./build\\x.o\nlogs/a.log\n", [])
+
+
+def test_filter_ignored_with_no_matches_and_empty_input(ex):
+    args = ["filter", "--root", str(ex), "--ignored"]
+    assert invoke(args, b"src/main.py\nREADME.md\n") == (0, "", [])
+    assert invoke(args, b"") == (0, "", [])
+    assert invoke(args, b"build/x.o\n../x\n") == (
+        2,
+        "",
+        ['ignorewhy: invalid path "../x"\n'],
+    )
+
+
+def test_filter_ignored_complements_five_stdin_paths(ex):
+    code, kept, err = invoke(["filter", "--root", str(ex)], STDIN_PATHS)
+    assert (code, kept, err) == (0, FILTER_OUT, [])
+
+    code, ignored, err = invoke(["filter", "--root", str(ex), "--ignored"], STDIN_PATHS)
+    assert (code, ignored, err) == (0, "build/x.o\nlogs/a.log\n", [])
+    kept_paths = set(kept.splitlines())
+    ignored_paths = set(ignored.splitlines())
+    input_paths = set(STDIN_PATHS.decode("utf-8").splitlines())
+    assert kept_paths.isdisjoint(ignored_paths)
+    assert kept_paths | ignored_paths == input_paths
+
+
+@pytest.mark.parametrize(
+    ("args", "message"),
+    [
+        (["explain", "--ignored", "a"], 'unknown option "--ignored"'),
+        (["lint", "--ignored", "f"], 'unknown option "--ignored"'),
+        (["filter", "--ignored=1"], 'unknown option "--ignored=1"'),
+    ],
+)
+def test_ignored_option_is_unknown_outside_filter_or_with_value(args, message):
+    assert invoke(args) == (2, "", [f"ignorewhy: {message}\n"])
+
