@@ -70,6 +70,13 @@ ignore.txt:7: IW002 duplicate of line 1
 6 problems
 ```
 
+Example: the file `notes.txt` has the lines `build/ # output` and `*.log`. The command `ignorewhy lint notes.txt` prints
+
+```
+notes.txt:1: IW006 "#" after a space is part of the pattern, not a comment
+1 problem
+```
+
 ## How rules are matched
 
 - An ignore file is UTF-8; one leading BOM is skipped and lines are split at LF. Per line, one trailing CR and trailing spaces are removed (a space escaped by a backslash stays). An empty line or a line that starts with `#` is no rule.
@@ -89,6 +96,7 @@ Intended differences from git: no POSIX classes (`[[:alpha:]]`), no `core.ignore
 - `IW003`: a `!` rule for an anchored literal path whose parent directory is already excluded by an earlier rule of the same file, so it cannot re-include.
 - `IW004`: a segment that contains `**` together with other characters; `**` only works as a whole segment.
 - `IW005`: a rule that starts with `./` or `../` and never matches.
+- `IW006`: a rule with an unescaped space directly followed by `#`, such as `build/ # output`. A `#` starts a comment only at the start of a line; here it is part of the pattern, so the rule matches nothing you meant. Write the comment on its own line, or escape the space with a backslash if the name really contains it. A rule that is already invalid (`IW001`) gets no `IW006`.
 
 ## Exit codes
 

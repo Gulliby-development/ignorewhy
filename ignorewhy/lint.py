@@ -22,6 +22,19 @@ def _has_partial_double_star(segment):
     return False
 
 
+def _has_space_before_hash(text):
+    """True when an unescaped space is immediately followed by #."""
+    i = 0
+    while i < len(text):
+        if text[i] == "\\":
+            i += 2
+            continue
+        if text[i] == " " and text[i + 1 : i + 2] == "#":
+            return True
+        i += 1
+    return False
+
+
 def _is_literal(segments):
     return all(not any(c in _NOT_LITERAL for c in segment) for segment in segments)
 
@@ -48,6 +61,10 @@ def lint_text(text):
         if rule.error is not None:
             problems.append((rule.line, "IW001", rule.error))
             continue
+        if _has_space_before_hash(rule.text):
+            problems.append(
+                (rule.line, "IW006", '"#" after a space is part of the pattern, not a comment')
+            )
         if rule.text in first_seen:
             problems.append((rule.line, "IW002", f"duplicate of line {first_seen[rule.text]}"))
         else:

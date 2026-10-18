@@ -306,3 +306,100 @@ def test_lint_rejects_options(tmp_path, monkeypatch):
         "",
         'ignorewhy: unknown option "--root"\n',
     )
+
+
+# IW006
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "build/ # output",
+        "*.log # logs",
+        "!keep.log # keep",
+        "a b #c",
+        "  # not a comment",
+        "x # y # z",
+    ],
+)
+def test_iw006_reports_space_before_hash(text):
+    assert lint_text(text) == [
+        (1, "IW006", '"#" after a space is part of the pattern, not a comment')
+    ]
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "# a comment",
+        "build/#output",
+        "a#b",
+        "foo" + BACKSLASH + " #bar",
+        "",
+        "*.log   ",
+    ],
+)
+def test_no_iw006(text):
+    assert [item for item in lint_text(text) if item[1] == "IW006"] == []
+
+
+def test_invalid_rule_gets_only_iw001_instead_of_iw006():
+    assert lint_text("foo[ # x") == [
+        (1, "IW001", 'invalid pattern: unterminated "[" class')
+    ]
+
+
+def test_iw004_and_iw006_on_one_line_are_ordered_by_code():
+    assert lint_text("a**b # c") == [
+        (1, "IW004", '"**" only works as a whole path segment'),
+        (1, "IW006", '"#" after a space is part of the pattern, not a comment'),
+    ]
+
+
+def test_iw002_and_iw006_on_different_lines():
+    assert lint_text("build/ # output\nbuild/ # output") == [
+        (1, "IW006", '"#" after a space is part of the pattern, not a comment'),
+        (2, "IW002", "duplicate of line 1"),
+        (2, "IW006", '"#" after a space is part of the pattern, not a comment'),
+    ]
+
+
+def test_iw006_worked_example(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    lines = [
+        "build/ # output",
+        "*.log",
+        "!keep.log # keep it",
+        "# a real comment",
+        "foo" + BACKSLASH + " #bar",
+        "a**b # x",
+        "build/ # output",
+        "name#tag",
+    ]
+    write(tmp_path / "ex.txt", "\n".join(lines) + "\n")
+    expected = (
+        'ex.txt:1: IW006 "#" after a space is part of the pattern, not a comment\n'
+        'ex.txt:3: IW006 "#" after a space is part of the pattern, not a comment\n'
+        'ex.txt:6: IW004 "**" only works as a whole path segment\n'
+        'ex.txt:6: IW006 "#" after a space is part of the pattern, not a comment\n'
+        "ex.txt:7: IW002 duplicate of line 1\n"
+        'ex.txt:7: IW006 "#" after a space is part of the pattern, not a comment\n'
+        "6 problems\n"
+    )
+    assert run_cli(["lint", "ex.txt"]) == (1, expected, "")
+
+
+def test_iw006_lint_command_reports_problem_and_exits_one(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    write(tmp_path / "notes.txt", "build/ # output\n")
+    expected = (
+        'notes.txt:1: IW006 "#" after a space is part of the pattern, not a comment\n'
+        "1 problem\n"
+    )
+    assert run_cli(["lint", "notes.txt"]) == (1, expected, "")
+
+
+def test_iw006_lint_command_keeps_clean_file_clean(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    write(tmp_path / "clean.txt", "*.log\n# only comments\nbuild/\n")
+    assert run_cli(["lint", "clean.txt"]) == (0, "ok, 2 rules in 1 file\n", "")
