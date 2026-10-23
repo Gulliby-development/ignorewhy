@@ -4,6 +4,7 @@ from ignorewhy.rules import parse_text, split_body
 from ignorewhy.ruleset import Layer, decide
 
 _NOT_LITERAL = "*?[\\"
+_SPECIAL_ESCAPES = " !#*-?[]^\\"
 
 
 def _has_partial_double_star(segment):
@@ -35,6 +36,20 @@ def _has_space_before_hash(text):
     return False
 
 
+def _plain_escape(text):
+    i = 0
+    while i < len(text):
+        if text[i] == "\\":
+            if i + 1 < len(text):
+                char = text[i + 1]
+                if char not in _SPECIAL_ESCAPES:
+                    return char
+            i += 2
+        else:
+            i += 1
+    return None
+
+
 def _is_literal(segments):
     return all(not any(c in _NOT_LITERAL for c in segment) for segment in segments)
 
@@ -64,6 +79,15 @@ def lint_text(text):
         if _has_space_before_hash(rule.text):
             problems.append(
                 (rule.line, "IW006", '"#" after a space is part of the pattern, not a comment')
+            )
+        plain = _plain_escape(rule.text)
+        if plain is not None:
+            problems.append(
+                (
+                    rule.line,
+                    "IW007",
+                    f'"\\{plain}" is the same as "{plain}"; use "/" between segments',
+                )
             )
         if rule.text in first_seen:
             problems.append((rule.line, "IW002", f"duplicate of line {first_seen[rule.text]}"))

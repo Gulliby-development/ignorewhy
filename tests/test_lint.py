@@ -403,3 +403,54 @@ def test_iw006_lint_command_keeps_clean_file_clean(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     write(tmp_path / "clean.txt", "*.log\n# only comments\nbuild/\n")
     assert run_cli(["lint", "clean.txt"]) == (0, "ok, 2 rules in 1 file\n", "")
+
+
+# --- IW007 ------------------------------------------------------------------------------------
+
+
+def iw007(char):
+    return f'"{BACKSLASH}{char}" is the same as "{char}"; use "/" between segments'
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("build" + BACKSLASH + "out", [(1, "IW007", iw007("o"))]),
+        ("src" + BACKSLASH + "main" + BACKSLASH + "app", [(1, "IW007", iw007("m"))]),
+        ("!bin" + BACKSLASH + "debug", [(1, "IW007", iw007("d"))]),
+        ("a" + BACKSLASH + BACKSLASH + BACKSLASH + "b", [(1, "IW007", iw007("b"))]),
+        ("[" + BACKSLASH + "d]x", [(1, "IW007", iw007("d"))]),
+        (
+            "a" + BACKSLASH + "b # c",
+            [
+                (1, "IW006", '"#" after a space is part of the pattern, not a comment'),
+                (1, "IW007", iw007("b")),
+            ],
+        ),
+        (
+            "a" + BACKSLASH + "b\na" + BACKSLASH + "b",
+            [
+                (1, "IW007", iw007("b")),
+                (2, "IW002", "duplicate of line 1"),
+                (2, "IW007", iw007("b")),
+            ],
+        ),
+        ("a" + BACKSLASH + "b" + BACKSLASH, [(1, "IW001", "invalid pattern: trailing backslash")]),
+        (BACKSLASH + "#x", []),
+        (BACKSLASH + "!x", []),
+        ("x" + BACKSLASH + " y", []),
+        ("docs" + BACKSLASH + "*.md", []),
+        ("a" + BACKSLASH + BACKSLASH + "b", []),
+    ],
+)
+def test_iw007_backslash_before_an_ordinary_character(text, expected):
+    assert lint_text(text) == expected
+
+
+def test_iw007_lint_command_reports_problem_and_exits_one(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    write(tmp_path / "ex.txt", "dist" + BACKSLASH + "app\n*.log\ndocs" + BACKSLASH + "*.md\n")
+    expected = (
+        f'ex.txt:1: IW007 "{BACKSLASH}a" is the same as "a"; use "/" between segments\n1 problem\n'
+    )
+    assert run_cli(["lint", "ex.txt"]) == (1, expected, "")
