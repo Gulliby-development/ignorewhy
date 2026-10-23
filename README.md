@@ -97,6 +97,7 @@ Intended differences from git: no POSIX classes (`[[:alpha:]]`), no `core.ignore
 - `IW004`: a segment that contains `**` together with other characters; `**` only works as a whole segment.
 - `IW005`: a rule that starts with `./` or `../` and never matches.
 - `IW006`: a rule with an unescaped space directly followed by `#`, such as `build/ # output`. A `#` starts a comment only at the start of a line; here it is part of the pattern, so the rule matches nothing you meant. Write the comment on its own line, or escape the space with a backslash if the name really contains it. A rule that is already invalid (`IW001`) gets no `IW006`.
+- `IW007`: a rule with a backslash before an ordinary character, that is any character except a space and `! # * - ? [ ] ^ \`. A backslash only escapes the next character, so `build\out` means the name `buildout`, not the path `build/out`; write `/` between path segments. Only the first such backslash of a rule is reported, as `\o` is the same as `o`. A rule that is already invalid (`IW001`) gets no `IW007`.
 
 ## Exit codes
 
