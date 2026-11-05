@@ -2,13 +2,17 @@
 
 USAGE = (
     "usage: ignorewhy explain [--root DIR] [--exclude FILE] PATH...",
-    "       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [FILE]",
+    "       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [--count] [FILE]",
     "       ignorewhy lint FILE...",
 )
 
 
 def error_line(message):
     return f"ignorewhy: {message}"
+
+
+def count_line(count):
+    return str(count)
 
 
 def explain_line(path_text, decision):

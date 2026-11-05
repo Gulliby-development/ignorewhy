@@ -13,7 +13,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 USAGE_LINES = (
     "usage: ignorewhy explain [--root DIR] [--exclude FILE] PATH...",
-    "       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [FILE]",
+    "       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [--count] [FILE]",
     "       ignorewhy lint FILE...",
 )
 
@@ -386,9 +386,15 @@ def test_package_has_exactly_the_named_files():
     assert {path.name for path in source_files()} == SOURCE_NAMES
 
 
-def test_tests_folder_has_exactly_four_files():
+def test_tests_folder_has_exactly_five_files():
     names = {path.name for path in (REPO / "tests").iterdir() if path.suffix == ".py"}
-    assert names == {"test_rules.py", "test_ruleset.py", "test_lint.py", "test_cli.py"}
+    assert names == {
+        "test_rules.py",
+        "test_ruleset.py",
+        "test_lint.py",
+        "test_cli.py",
+        "test_count.py",
+    }
     assert not (REPO / "tests" / "__init__.py").exists()
 
 
