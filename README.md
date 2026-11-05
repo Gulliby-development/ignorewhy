@@ -26,15 +26,15 @@ It needs Python 3.11 or newer and has no dependencies (standard library only).
 
 ```
 usage: ignorewhy explain [--root DIR] [--exclude FILE] PATH...
-       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [FILE]
+       ignorewhy filter [--root DIR] [--exclude FILE] [--ignored] [--count] [FILE]
        ignorewhy lint FILE...
 ```
 
 - `explain` prints one line per PATH and names the rule that decides it.
-- `filter` reads one path per line from FILE (or from standard input without FILE or with `-`) and prints the paths that are not ignored; with `--ignored` it prints the paths that are ignored instead.
+- `filter` reads one path per line from FILE (or from standard input without FILE or with `-`) and prints the paths that are not ignored; with `--ignored` it prints the paths that are ignored instead; with `--count` it prints only how many paths it would print, as one line with a decimal number (`0` when there are none).
 - `lint` reads each FILE as one ignore file and reports rules that cannot work.
 
-Options of `explain` and `filter`: `--root DIR` is the directory that holds the root `.gitignore` (default `.`); `--exclude FILE` is an extra ignore file with the weakest rules. Write them as `--opt VALUE` or `--opt=VALUE`; the last one wins. `lint` takes no options. Paths are never looked up on disk: a trailing `/` marks a directory. `--ignored` is an option of `filter` only and takes no value.
+Options of `explain` and `filter`: `--root DIR` is the directory that holds the root `.gitignore` (default `.`); `--exclude FILE` is an extra ignore file with the weakest rules. Write them as `--opt VALUE` or `--opt=VALUE`; the last one wins. `lint` takes no options. Paths are never looked up on disk: a trailing `/` marks a directory. `--ignored` and `--count` are options of `filter` only and take no value.
 
 Example: in a folder `ex` with the root `.gitignore` (lines `build/`, `*.log`, `!keep.log`, `/dist`) and `docs/.gitignore` (lines `*.tmp`, `!/notes.tmp`), this command run in `ex`
 
